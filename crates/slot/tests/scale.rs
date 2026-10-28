@@ -3,7 +3,7 @@ mod common;
 use common::{tmp_root_with_carts, tmp_root_with_gb_carts, tmp_root_with_gbc_carts, StubSnapshot};
 use slot::app::{App, Phase};
 use slot::video_mode::VideoMode;
-use slot_gfx::{GameLayout, TexId, WHOLE_TEXTURE};
+use slot_gfx::{GameLayout, Sizing, TexId, WHOLE_TEXTURE};
 use slot_input::Action;
 use slot_store::{write_slot_state, BezelPick, Platform, Scale, SlotState, Stretch};
 use slot_ui::{BezelArt, QuickRow, QuickValue};
@@ -77,6 +77,25 @@ fn defaults_place_every_platform_as_before() {
             }
         }
     }
+}
+
+#[test]
+fn pico8_stretch_fills_the_height_instead_of_widening_the_square() {
+    use slot::video_mode::picture_for;
+    let (sizing, source) = picture_for(
+        Platform::Pico8,
+        VideoMode::Stretch,
+        Scale::SpFrame,
+        Stretch::Classic,
+    );
+    // The square scales to fill the panel's height (Fit) rather than the Game Boy
+    // width-widening (Band) that stretched a 1:1 picture out to 1.875:1.
+    assert_eq!(sizing, Sizing::Fit);
+    // Its source is the square picture (top inset > 0), not the full-height window.
+    assert!(
+        source[1] > 0.0,
+        "the square should be cropped out, not taken full-height: {source:?}"
+    );
 }
 
 #[test]

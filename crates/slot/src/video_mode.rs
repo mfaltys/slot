@@ -64,6 +64,12 @@ pub fn picture_for(
         (VideoMode::Actual, Scale::Integer, _) => (Sizing::Integer, crop),
         (VideoMode::Actual, Scale::Fit, _) => (Sizing::Fit, crop),
         (VideoMode::Actual, _, _) => (Sizing::Band, WHOLE_TEXTURE),
+        // PICO-8's square picture goes very wide under the Game Boy "widen" behaviour (the panel
+        // is 3:2, so filling the width stretches a 1:1 picture to 1.875:1). Scale it to fill the
+        // panel's height instead: a square, undistorted, pillarboxed in the middle.
+        (VideoMode::Stretch, _, Stretch::Classic) if platform == Platform::Pico8 => {
+            (Sizing::Fit, crop)
+        }
         (VideoMode::Stretch, _, Stretch::Classic) => (Sizing::Band, window),
         (VideoMode::Stretch, _, Stretch::FullScreen) => (Sizing::Panel, crop),
     }
