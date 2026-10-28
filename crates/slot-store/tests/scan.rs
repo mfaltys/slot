@@ -157,3 +157,55 @@ fn the_same_stem_on_two_platforms_is_two_carts_with_two_labels() {
         "the GBA cart borrowed the Game Boy label"
     );
 }
+
+#[test]
+fn a_pico8_cart_png_labels_itself_when_there_is_no_labels_file() {
+    let d = tmp_root();
+    let cart = d.path().join("Games/PICO8/Celeste.p8.png");
+    std::fs::create_dir_all(cart.parent().unwrap()).unwrap();
+    std::fs::write(&cart, b"\x89PNG\r\n\x1a\n").unwrap();
+
+    let carts = scan(d.path()).unwrap();
+
+    assert_eq!(carts.len(), 1);
+    assert_eq!(carts[0].stem, "Celeste.p8");
+    assert_eq!(
+        carts[0].label.as_deref(),
+        Some(cart.as_path()),
+        "a cart PNG did not become its own label"
+    );
+}
+
+#[test]
+fn a_text_only_p8_cart_has_no_image_so_no_label() {
+    let d = tmp_root();
+    std::fs::create_dir_all(d.path().join("Games/PICO8")).unwrap();
+    std::fs::write(d.path().join("Games/PICO8/Mine.p8"), b"pico-8 cartridge").unwrap();
+
+    let carts = scan(d.path()).unwrap();
+
+    assert_eq!(carts.len(), 1);
+    assert!(
+        carts[0].label.is_none(),
+        "a text cart borrowed an image label"
+    );
+}
+
+#[test]
+fn a_hand_made_label_beats_the_pico8_cart_image() {
+    let d = tmp_root();
+    let cart = d.path().join("Games/PICO8/Celeste.p8.png");
+    std::fs::create_dir_all(cart.parent().unwrap()).unwrap();
+    std::fs::write(&cart, b"\x89PNG\r\n\x1a\n").unwrap();
+    let made = d.path().join("Labels/PICO8/Celeste.p8.png");
+    std::fs::create_dir_all(made.parent().unwrap()).unwrap();
+    std::fs::write(&made, b"\x89PNG\r\n\x1a\n").unwrap();
+
+    let carts = scan(d.path()).unwrap();
+
+    assert_eq!(
+        carts[0].label.as_deref(),
+        Some(made.as_path()),
+        "a hand-made Labels/ file must win over the cart's own image"
+    );
+}

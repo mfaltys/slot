@@ -9,6 +9,7 @@ pub enum Mould {
     Gba,
     Notched,
     Rounded,
+    P8,
 }
 
 pub const GBA_CART_W: u32 = 360;
@@ -38,6 +39,8 @@ const GBC_CART_PNG: &[u8] = include_bytes!("../../../assets/gbc_cart.png");
 const GBA_INTERIOR_PNG: &[u8] = include_bytes!("../../../assets/gba_interior.png");
 const GB_INTERIOR_PNG: &[u8] = include_bytes!("../../../assets/gb_interior.png");
 const GBC_INTERIOR_PNG: &[u8] = include_bytes!("../../../assets/gbc_interior.png");
+const P8_CART_PNG: &[u8] = include_bytes!("../../../assets/p8_cart.png");
+const P8_INTERIOR_PNG: &[u8] = include_bytes!("../../../assets/p8_interior.png");
 const GB_BOARD_PNG: &[u8] = include_bytes!("../../../assets/gb_board.png");
 const BOARD_PNG: &[u8] = include_bytes!("../../../assets/board.png");
 const SOCKET_PNG: &[u8] = include_bytes!("../../../assets/socket.png");
@@ -154,6 +157,18 @@ pub fn gbc_interior() -> &'static [u8] {
     load(GBC_INTERIOR_PNG, GB_CART_W, GB_CART_H, &P)
 }
 
+/// The PICO-8 cart's painted front, from `assets/p8_cart.png`.
+pub fn p8_cart() -> &'static [u8] {
+    static P: OnceLock<Vec<u8>> = OnceLock::new();
+    load(P8_CART_PNG, GB_CART_W, GB_CART_H, &P)
+}
+
+/// The back of a PICO-8 cart, from `assets/p8_interior.png`.
+pub fn p8_interior() -> &'static [u8] {
+    static P: OnceLock<Vec<u8>> = OnceLock::new();
+    load(P8_INTERIOR_PNG, GB_CART_W, GB_CART_H, &P)
+}
+
 /// The Game Boy PCB, from `assets/gb_board.png`, drawn between the pak's back and front plastic.
 pub fn gb_board() -> &'static [u8] {
     static P: OnceLock<Vec<u8>> = OnceLock::new();
@@ -243,6 +258,7 @@ const GBC_SHELL_PNG: &[u8] = include_bytes!("../../../assets/gbc_neutral.png");
 const GBA_CLEAR_PNG: &[u8] = include_bytes!("../../../assets/gba_clear.png");
 const GB_CLEAR_PNG: &[u8] = include_bytes!("../../../assets/gb_neutral.png");
 const GBC_CLEAR_PNG: &[u8] = include_bytes!("../../../assets/gbc_clear.png");
+const P8_SHELL_PNG: &[u8] = include_bytes!("../../../assets/p8_neutral.png");
 
 /// The neutral shell asset for a mould, opaque or the separate clear one. The game's colour is
 /// blended onto it by the caller.
@@ -253,13 +269,18 @@ pub fn shell_asset(mould: Mould, clear: bool) -> &'static [u8] {
     static GBA_CLEAR: OnceLock<Vec<u8>> = OnceLock::new();
     static GB_CLEAR: OnceLock<Vec<u8>> = OnceLock::new();
     static GBC_CLEAR: OnceLock<Vec<u8>> = OnceLock::new();
+    static P8: OnceLock<Vec<u8>> = OnceLock::new();
+    // PICO-8 has one cart design, so opaque and clear share its neutral shell; a clear cart keeps
+    // its real transparency through the shell's own alpha, not a separate art file.
     let (bytes, w, h, slot) = match (mould, clear) {
         (Mould::Gba, false) => (GBA_SHELL_PNG, GBA_CART_W, GBA_CART_H, &GBA),
         (Mould::Notched, false) => (GB_SHELL_PNG, GB_CART_W, GB_CART_H, &GB),
         (Mould::Rounded, false) => (GBC_SHELL_PNG, GB_CART_W, GB_CART_H, &GBC),
+        (Mould::P8, false) => (P8_SHELL_PNG, GB_CART_W, GB_CART_H, &P8),
         (Mould::Gba, true) => (GBA_CLEAR_PNG, GBA_CART_W, GBA_CART_H, &GBA_CLEAR),
         (Mould::Notched, true) => (GB_CLEAR_PNG, GB_CART_W, GB_CART_H, &GB_CLEAR),
         (Mould::Rounded, true) => (GBC_CLEAR_PNG, GB_CART_W, GB_CART_H, &GBC_CLEAR),
+        (Mould::P8, true) => (P8_SHELL_PNG, GB_CART_W, GB_CART_H, &P8),
     };
     load(bytes, w, h, slot)
 }

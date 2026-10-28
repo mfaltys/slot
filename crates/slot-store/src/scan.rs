@@ -86,9 +86,21 @@ pub fn scan(root: &Path) -> Result<Vec<Cart>, StoreError> {
             let Some(stem) = rom.file_stem().and_then(|s| s.to_str()) else {
                 continue;
             };
-            let label = labels
+            let mut label = labels
                 .get(&format!("{stem}.png").to_lowercase())
                 .map(|name| labels_dir.join(name));
+            // A PICO-8 cart PNG carries the game's cover art in its own image, so it doubles as the
+            // label when there is no hand-made Labels/ file. Text-only .p8 carts have no image and
+            // keep the plain generated name. A Labels/ file always wins when present.
+            if platform == Platform::Pico8
+                && label.is_none()
+                && rom
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| e.eq_ignore_ascii_case("png"))
+            {
+                label = Some(rom.clone());
+            }
             carts.push(Cart {
                 platform,
                 stem: stem.to_string(),

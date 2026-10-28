@@ -77,6 +77,8 @@ struct Spec {
 enum Shape {
     Gba,
     Gb(GbShell),
+    /// PICO-8 uses the Game Boy Notched plate's geometry but its own cart art.
+    P8,
 }
 
 pub fn gb_shell_of(cart: &Cart) -> Option<GbShell> {
@@ -90,10 +92,7 @@ pub fn gb_shell_of(cart: &Cart) -> Option<GbShell> {
                 Class::Original | Class::DualMode => GbShell::Notched,
             },
         }),
-        Platform::Pico8 => Some(match cart.shell.map(|c| c.outline) {
-            Some(Outline::Rounded) => GbShell::Rounded,
-            _ => GbShell::Notched,
-        }),
+        Platform::Pico8 => Some(GbShell::Notched),
     }
 }
 
@@ -112,6 +111,9 @@ pub fn label_rect(shell: Option<GbShell>) -> (f32, f32, f32, f32) {
 }
 
 fn shape_of(cart: &Cart) -> Shape {
+    if cart.platform == Platform::Pico8 {
+        return Shape::P8;
+    }
     match gb_shell_of(cart) {
         None => Shape::Gba,
         Some(shell) => Shape::Gb(shell),
@@ -145,6 +147,16 @@ fn spec(shape: Shape) -> Spec {
                 GbShell::Rounded => bitmaps::gbc_cart(),
             },
         },
+        // PICO-8 rides the Game Boy Notched plate: same size, label box and mask (its cart's
+        // outline is pixel-identical to the Game Boy's), but its own art and neutral shell.
+        Shape::P8 => Spec {
+            w: GB_CART_W,
+            h: GB_CART_H,
+            label: (GB_LABEL_X, GB_LABEL_Y, GB_LABEL_W, GB_LABEL_H),
+            mask: gb_cart_mask(GbShell::Notched),
+            mould: Mould::P8,
+            paint: bitmaps::p8_cart(),
+        },
     }
 }
 
@@ -162,7 +174,8 @@ pub fn seated_box(platform: Platform) -> (u32, u32) {
 pub fn cart_box(platform: Platform) -> (u32, u32) {
     let s = spec(match platform {
         Platform::Gba | Platform::Gbav => Shape::Gba,
-        Platform::Gb | Platform::Gbc | Platform::Pico8 => Shape::Gb(GbShell::Notched),
+        Platform::Pico8 => Shape::P8,
+        Platform::Gb | Platform::Gbc => Shape::Gb(GbShell::Notched),
     });
     (s.w, s.h)
 }
@@ -203,15 +216,20 @@ pub fn shows_interior(cart: &Cart) -> bool {
 /// Boy Color pak `gbc_interior.png`. Same size as that cart's board and face.
 pub fn cart_interior(cart: &Cart) -> CartFace {
     let colour = shell_for(cart).colour;
-    let (src, w, h, mask) = match gb_shell_of(cart) {
-        None => (bitmaps::gba_interior(), BOARD_W, BOARD_H, None),
-        Some(shell) => {
-            let s = spec(Shape::Gb(shell));
-            let src = match shell {
-                GbShell::Notched => bitmaps::gb_interior(),
-                GbShell::Rounded => bitmaps::gbc_interior(),
-            };
-            (src, s.w, s.h, Some(s.mask))
+    let (src, w, h, mask) = if cart.platform == Platform::Pico8 {
+        let s = spec(Shape::P8);
+        (bitmaps::p8_interior(), s.w, s.h, Some(s.mask))
+    } else {
+        match gb_shell_of(cart) {
+            None => (bitmaps::gba_interior(), BOARD_W, BOARD_H, None),
+            Some(shell) => {
+                let s = spec(Shape::Gb(shell));
+                let src = match shell {
+                    GbShell::Notched => bitmaps::gb_interior(),
+                    GbShell::Rounded => bitmaps::gbc_interior(),
+                };
+                (src, s.w, s.h, Some(s.mask))
+            }
         }
     };
     let mut rgba = src.to_vec();
@@ -383,6 +401,7 @@ pub fn neutral_shell(mould: Mould, clear: bool) -> Vec<u8> {
         Mould::Gba => Shape::Gba,
         Mould::Notched => Shape::Gb(GbShell::Notched),
         Mould::Rounded => Shape::Gb(GbShell::Rounded),
+        Mould::P8 => Shape::P8,
     };
     let s = spec(shape);
     assert_eq!(
@@ -446,6 +465,7 @@ fn dress(s: &Spec, rgba: &mut [u8]) {
         Mould::Gba => "GAME BOY ADVANCE",
         Mould::Notched => "GAME BOY",
         Mould::Rounded => "GAME BOY COLOR",
+        Mould::P8 => "PICO-8",
     };
     stamp_console(rgba, s.w, s.h, title, y0);
 }
@@ -609,7 +629,7 @@ fn generated_label(s: &Spec, title: &str) -> Vec<u8> {
     if let Some(font) = text::label_font() {
         let (max_px, max_h) = match s.mould {
             Mould::Gba => (lh as f32 / (MAX_LINES as f32 * 1.36), f32::INFINITY),
-            Mould::Notched | Mould::Rounded => {
+            Mould::Notched | Mould::Rounded | Mould::P8 => {
                 let room = (lh - 2 * PAD) as f32;
                 (room / MAX_LINES as f32, room)
             }
