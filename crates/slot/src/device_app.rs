@@ -151,11 +151,19 @@ pub fn run() {
     frontend.drive_emulator();
     let mut pacer = Pacer::new();
     let (mut frames, mut missed, mut early) = (0u32, 0u32, 0u32);
+    let mut menu_marked = false;
     loop {
         pacer.wait();
         let began = Instant::now();
         input.steer_with_stick(frontend.app().left_stick_dpad());
         frontend.advance(&mut input);
+        let mark_menu = !menu_marked && frontend.app().in_game_menu().is_some();
+        if mark_menu {
+            eprintln!(
+                "slot: menu: advance done at {:.1} ms",
+                slot::boot_time::ms()
+            );
+        }
         if frontend.restarting() {
             frontend.restart();
         }
@@ -172,13 +180,23 @@ pub fn run() {
             return;
         }
         frontend.step_emulator(pacer.period, STEP_TIMEOUT);
+        if mark_menu {
+            eprintln!("slot: menu: emu stepped at {:.1} ms", slot::boot_time::ms());
+        }
         frontend.render(&mut compositor, window);
+        if mark_menu {
+            eprintln!("slot: menu: rendered at {:.1} ms", slot::boot_time::ms());
+            menu_marked = true;
+        }
         let swap = Instant::now();
         let work = swap - began;
         if let Err(e) = surface.swap() {
             eprintln!("slot: {e}");
             frontend.stop();
             return;
+        }
+        if mark_menu {
+            eprintln!("slot: menu: swapped at {:.1} ms", slot::boot_time::ms());
         }
         let swap_took = swap.elapsed();
         slot::latency::swapped(swap_took.as_secs_f64() * 1000.0);

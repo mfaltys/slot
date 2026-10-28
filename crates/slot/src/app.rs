@@ -1061,8 +1061,16 @@ impl App {
 
     fn refresh_albums(&mut self) {
         self.has_states = !self.entries().is_empty();
+        eprintln!(
+            "slot: menu: states listed at {:.1} ms",
+            crate::boot_time::ms()
+        );
         let removing = self.shot_writer.removing();
         self.has_shots = self.shot_dir().is_some_and(|s| s.any(&removing));
+        eprintln!(
+            "slot: menu: shots listed at {:.1} ms",
+            crate::boot_time::ms()
+        );
     }
 
     fn list_shots_later(&mut self) {
@@ -2973,12 +2981,17 @@ impl App {
     }
 
     fn tap_in_game_menu(&mut self, to: Option<QuickRow>) {
+        eprintln!(
+            "slot: menu: tap begin to={to:?} at {:.1} ms",
+            crate::boot_time::ms()
+        );
         if to.is_some() && self.in_game_menu.is_none() {
             self.refresh_albums();
             self.hud.hush();
         }
         self.menu_tap = Some((self.now(), self.in_game_menu));
         self.in_game_menu = to;
+        eprintln!("slot: menu: tap done at {:.1} ms", crate::boot_time::ms());
     }
 
     fn in_game_menu_shown(&self) -> Option<QuickRow> {
