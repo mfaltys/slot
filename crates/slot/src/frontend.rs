@@ -752,31 +752,14 @@ impl Frontend {
 
     pub fn advance(&mut self, input: &mut dyn InputSource) {
         let now = self.now();
-        let mark = self.app().in_game_menu().is_some();
-        if mark {
-            eprintln!("slot: menu: >advance {:.1}", crate::boot_time::ms());
-        }
         let events = input.poll(now);
-        if mark {
-            eprintln!(
-                "slot: menu: >poll {} ev {:.1}",
-                events.len(),
-                crate::boot_time::ms()
-            );
-        }
         if self.rebuild.is_some() {
             return;
         }
         self.session.feed(events, now);
-        if mark {
-            eprintln!("slot: menu: >feed {:.1}", crate::boot_time::ms());
-        }
         let dt = self.last.elapsed().as_secs_f32();
         self.last = Instant::now();
         self.session.update(dt);
-        if mark {
-            eprintln!("slot: menu: >update {:.1}", crate::boot_time::ms());
-        }
     }
 
     pub fn gallery_decodes(&self) -> usize {

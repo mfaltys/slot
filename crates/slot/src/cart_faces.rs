@@ -1,8 +1,9 @@
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
+use std::time::Duration;
 
 use slot_gfx::{Compositor, TexId};
 use slot_store::Cart;
@@ -12,6 +13,13 @@ use crate::app::{App, FaceWant};
 use crate::label_cache::label_art;
 
 const WORKERS: usize = 2;
+
+/// How long a frame waits for an on-screen cart face before drawing without it.
+/// A render path must never block forever on a background thread: a face the
+/// workers are slow to build (or never send) would otherwise freeze the whole
+/// frontend. Waiting a little keeps the usual same-frame draw; giving up after
+/// that costs one frame's blank slot instead of a hard lock.
+const FACE_WAIT: Duration = Duration::from_millis(50);
 
 type Key = (usize, usize);
 
@@ -32,6 +40,7 @@ pub struct CartFaces {
     pending: HashSet<Key>,
     asked: Vec<FaceWant>,
     free: Vec<TexId>,
+    gave_up: HashSet<Key>,
 }
 
 impl CartFaces {
@@ -53,6 +62,7 @@ impl CartFaces {
             pending: HashSet::new(),
             asked: Vec::new(),
             free: Vec::new(),
+            gave_up: HashSet::new(),
         }
     }
 
@@ -70,14 +80,22 @@ impl CartFaces {
             .asked
             .iter()
             .filter(|w| w.on_screen)
+            .filter(|w| !self.gave_up.contains(&(w.shelf, w.index)))
             .map(|w| (w.shelf, w.index))
             .collect();
         while !waiting.is_empty() {
-            let Ok((key, face, interior)) = self.built.recv() else {
-                return;
-            };
-            waiting.retain(|k| *k != key);
-            self.place(app, compositor, key, face, interior);
+            match self.built.recv_timeout(FACE_WAIT) {
+                Ok((key, face, interior)) => {
+                    waiting.retain(|k| *k != key);
+                    self.place(app, compositor, key, face, interior);
+                }
+                Err(RecvTimeoutError::Disconnected) => return,
+                Err(RecvTimeoutError::Timeout) => {
+                    eprintln!("slot: cart faces: no face after {FACE_WAIT:?}, waiting on {waiting:?}");
+                    self.gave_up.extend(waiting.iter().copied());
+                    return;
+                }
+            }
         }
     }
 
@@ -119,6 +137,7 @@ impl CartFaces {
         interior: Option<CartFace>,
     ) {
         self.pending.remove(&key);
+        self.gave_up.remove(&key);
         self.asked.retain(|w| (w.shelf, w.index) != key);
         let tex = self.texture(compositor, &face);
         self.free.extend(app.set_cart_face(key.0, key.1, tex));
