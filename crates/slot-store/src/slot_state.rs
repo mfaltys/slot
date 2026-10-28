@@ -259,11 +259,13 @@ pub enum Blending {
 impl Blending {
     pub const MGBA: [Blending; 3] = [Blending::Off, Blending::Mix, Blending::Ghosting];
     pub const GPSP: [Blending; 2] = [Blending::Off, Blending::Mix];
+    pub const NONE: [Blending; 1] = [Blending::Off];
 
     pub fn choices(core: Core) -> &'static [Blending] {
         match core {
             Core::Mgba => &Blending::MGBA,
             Core::Gpsp => &Blending::GPSP,
+            Core::Fake08 => &Blending::NONE,
         }
     }
 

@@ -90,6 +90,10 @@ pub fn gb_shell_of(cart: &Cart) -> Option<GbShell> {
                 Class::Original | Class::DualMode => GbShell::Notched,
             },
         }),
+        Platform::Pico8 => Some(match cart.shell.map(|c| c.outline) {
+            Some(Outline::Rounded) => GbShell::Rounded,
+            _ => GbShell::Notched,
+        }),
     }
 }
 
@@ -151,14 +155,14 @@ const GB_SEATED_H: u32 = 259;
 pub fn seated_box(platform: Platform) -> (u32, u32) {
     match platform {
         Platform::Gba | Platform::Gbav => (SEATED_W, SEATED_H),
-        Platform::Gb | Platform::Gbc => (SEATED_W, GB_SEATED_H),
+        Platform::Gb | Platform::Gbc | Platform::Pico8 => (SEATED_W, GB_SEATED_H),
     }
 }
 
 pub fn cart_box(platform: Platform) -> (u32, u32) {
     let s = spec(match platform {
         Platform::Gba | Platform::Gbav => Shape::Gba,
-        Platform::Gb | Platform::Gbc => Shape::Gb(GbShell::Notched),
+        Platform::Gb | Platform::Gbc | Platform::Pico8 => Shape::Gb(GbShell::Notched),
     });
     (s.w, s.h)
 }

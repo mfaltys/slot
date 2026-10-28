@@ -190,6 +190,7 @@ pub fn colour_option(
             "gpsp_color_correction",
             if on { "enabled" } else { "disabled" },
         )),
+        Core::Fake08 => None,
     }
 }
 
@@ -210,19 +211,21 @@ pub fn apply_game_boy_player(
     }
 }
 
-pub fn blend_option(which: Core, blending: Blending) -> (&'static str, &'static str) {
+pub fn blend_option(which: Core, blending: Blending) -> Option<(&'static str, &'static str)> {
     match (which, blending.on(which)) {
-        (Core::Mgba, Blending::Off) => ("mgba_interframe_blending", "OFF"),
-        (Core::Mgba, Blending::Mix) => ("mgba_interframe_blending", "mix"),
-        (Core::Mgba, Blending::Ghosting) => ("mgba_interframe_blending", "lcd_ghosting"),
-        (Core::Gpsp, Blending::Off) => ("gpsp_frame_mixing", "disabled"),
-        (Core::Gpsp, Blending::Mix | Blending::Ghosting) => ("gpsp_frame_mixing", "enabled"),
+        (Core::Mgba, Blending::Off) => Some(("mgba_interframe_blending", "OFF")),
+        (Core::Mgba, Blending::Mix) => Some(("mgba_interframe_blending", "mix")),
+        (Core::Mgba, Blending::Ghosting) => Some(("mgba_interframe_blending", "lcd_ghosting")),
+        (Core::Gpsp, Blending::Off) => Some(("gpsp_frame_mixing", "disabled")),
+        (Core::Gpsp, Blending::Mix | Blending::Ghosting) => Some(("gpsp_frame_mixing", "enabled")),
+        (Core::Fake08, _) => None,
     }
 }
 
 pub fn apply_blending(core: &mut LibretroCore, which: Core, blending: Blending) {
-    let (key, value) = blend_option(which, blending);
-    core.set_option(key, value);
+    if let Some((key, value)) = blend_option(which, blending) {
+        core.set_option(key, value);
+    }
 }
 
 pub fn apply_link_options(core: &mut LibretroCore, which: Core, player: u8) {
@@ -309,10 +312,15 @@ mod tests {
         ] {
             assert_eq!(
                 blend_option(which, blending),
-                want,
+                Some(want),
                 "{which:?} {blending:?}"
             );
         }
+        assert_eq!(
+            blend_option(Core::Fake08, Blending::Mix),
+            None,
+            "FAKE-08 has no frame blending option to spell"
+        );
     }
 
     #[test]

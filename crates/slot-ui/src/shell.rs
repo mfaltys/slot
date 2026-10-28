@@ -90,6 +90,7 @@ pub fn shell_for(cart: &Cart) -> Shell {
     match cart.platform {
         Platform::Gba | Platform::Gbav => gba_shell_for(&gba_code(cart)),
         Platform::Gb | Platform::Gbc => gb_shell_for(&cart.rom),
+        Platform::Pico8 => DMG_SHELL,
     }
 }
 

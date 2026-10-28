@@ -904,11 +904,11 @@ impl UiFaces {
                 quick_description_face(&["Supports single button and MENU+button."]),
                 quick_description_face(&["Supports single button and two button chords."]),
             ],
-            sockets: slot_store::Core::ALL
+            sockets: slot_store::Core::SWAPPABLE
                 .iter()
                 .map(|c| socket_face(*c))
                 .collect(),
-            chips: slot_store::Core::ALL
+            chips: slot_store::Core::SWAPPABLE
                 .iter()
                 .map(|c| chip_face(Some(*c)))
                 .collect(),

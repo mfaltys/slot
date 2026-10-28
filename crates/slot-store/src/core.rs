@@ -10,15 +10,20 @@ pub enum Core {
     #[default]
     Mgba,
     Gpsp,
+    Fake08,
 }
 
 impl Core {
-    pub const ALL: [Core; 2] = [Core::Mgba, Core::Gpsp];
+    pub const ALL: [Core; 3] = [Core::Mgba, Core::Gpsp, Core::Fake08];
+    /// The cores that share the GBA cartridge's two-chip picker board. PICO-8 has a single
+    /// core and no swap, so FAKE-08 is deliberately absent.
+    pub const SWAPPABLE: [Core; 2] = [Core::Mgba, Core::Gpsp];
 
     pub fn as_str(&self) -> &'static str {
         match self {
             Core::Mgba => "mgba",
             Core::Gpsp => "gpsp",
+            Core::Fake08 => "fake08",
         }
     }
 
@@ -30,6 +35,7 @@ impl Core {
         match self {
             Core::Mgba => "mGBA",
             Core::Gpsp => "gpSP",
+            Core::Fake08 => "FAKE-08",
         }
     }
 
@@ -37,6 +43,7 @@ impl Core {
         match s.trim().to_ascii_lowercase().as_str() {
             "mgba" => Some(Core::Mgba),
             "gpsp" => Some(Core::Gpsp),
+            "fake08" => Some(Core::Fake08),
             _ => None,
         }
     }
@@ -45,12 +52,14 @@ impl Core {
         match self {
             Core::Mgba => true,
             Core::Gpsp => platform.hardware() == Platform::Gba,
+            Core::Fake08 => platform.hardware() == Platform::Pico8,
         }
     }
 
     pub fn default_for(platform: Platform) -> Core {
         match platform {
             Platform::Gba | Platform::Gb | Platform::Gbc | Platform::Gbav => Core::Mgba,
+            Platform::Pico8 => Core::Fake08,
         }
     }
 }

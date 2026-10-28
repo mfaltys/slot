@@ -375,7 +375,8 @@ fn every_frame_blending_slot_sets_is_one_the_core_declares() {
                 &core,
                 &format!("{} blending={blending:?}", which.as_str()),
             );
-            let (key, value) = slot::core::blend_option(which, blending);
+            let (key, value) = slot::core::blend_option(which, blending)
+                .unwrap_or_else(|| panic!("{} has no blending option", which.as_str()));
             assert!(
                 core.options().iter().any(|(k, v)| k == key && v == value),
                 "{} was never told {key}={value} for {blending:?}",
@@ -453,7 +454,8 @@ fn frames_with_mix_set_at(which: Core, at: Option<usize>) -> Vec<Vec<u8>> {
     let mut frames = Vec::new();
     for i in 0..PRESENTS {
         if at == Some(i) {
-            let (key, value) = slot::core::blend_option(which, Blending::Mix);
+            let (key, value) = slot::core::blend_option(which, Blending::Mix)
+                .expect("mix is settable on this core");
             emu.set_option(key, value);
         }
         emu.tick(PANEL);

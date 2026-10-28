@@ -317,9 +317,10 @@ impl Session {
         }
         if let Some(blending) = self.app.take_blending() {
             if let Some(emu) = &self.emu {
-                let (key, value) = crate::core::blend_option(self.app.core(), blending);
-                emu.set_option(key, value);
-                recoloured = true;
+                if let Some((key, value)) = crate::core::blend_option(self.app.core(), blending) {
+                    emu.set_option(key, value);
+                    recoloured = true;
+                }
             }
         }
         if recoloured && self.held() && !self.app.link_active() {

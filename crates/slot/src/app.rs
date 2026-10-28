@@ -1322,16 +1322,14 @@ impl App {
     fn bezel_pick(&mut self, platform: Platform) -> &mut BezelPick {
         match platform {
             Platform::Gba | Platform::Gbav => &mut self.state.bezel_gba,
-            Platform::Gb => &mut self.state.bezel_gb,
-            Platform::Gbc => &mut self.state.bezel_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => &mut self.state.bezel_gb,
         }
     }
 
     pub fn resolved_bezel(&self, platform: Platform) -> BezelPick {
         let pick = match platform {
             Platform::Gba | Platform::Gbav => &self.state.bezel_gba,
-            Platform::Gb => &self.state.bezel_gb,
-            Platform::Gbc => &self.state.bezel_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => &self.state.bezel_gb,
         };
         match self.bezel_choices(platform).contains(pick) {
             true => pick.clone(),
@@ -1820,15 +1818,13 @@ impl App {
     fn scale_of(&self, platform: Platform) -> Scale {
         match platform {
             Platform::Gba | Platform::Gbav => self.state.scale_gba,
-            Platform::Gb => self.state.scale_gb,
-            Platform::Gbc => self.state.scale_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.scale_gb,
         }
     }
 
     fn stretch_of(&self, platform: Platform) -> Stretch {
         match platform {
-            Platform::Gb => self.state.stretch_gb,
-            Platform::Gbc => self.state.stretch_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.stretch_gb,
             Platform::Gba | Platform::Gbav => Stretch::Classic,
         }
     }
@@ -1961,8 +1957,7 @@ impl App {
         }];
         match platform {
             Platform::Gba | Platform::Gbav => self.state.scale_gba = to,
-            Platform::Gb => self.state.scale_gb = to,
-            Platform::Gbc => self.state.scale_gbc = to,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.scale_gb = to,
         }
     }
 
@@ -2506,8 +2501,7 @@ impl App {
     pub fn screen_shader(&self) -> Shader {
         match self.playing_platform() {
             Platform::Gba | Platform::Gbav => self.state.shader_gba,
-            Platform::Gb => self.state.shader_gb,
-            Platform::Gbc => self.state.shader_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.shader_gb,
         }
     }
 
@@ -2522,16 +2516,14 @@ impl App {
     pub fn colour_correction_for(&self, platform: Platform) -> bool {
         match platform {
             Platform::Gba | Platform::Gbav => self.state.colour_correction_gba,
-            Platform::Gb => self.state.colour_correction_gb,
-            Platform::Gbc => self.state.colour_correction_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.colour_correction_gb,
         }
     }
 
     pub fn blending_for(&self, platform: Platform) -> Blending {
         match platform {
             Platform::Gba | Platform::Gbav => self.state.blending_gba,
-            Platform::Gb => self.state.blending_gb,
-            Platform::Gbc => self.state.blending_gbc,
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => self.state.blending_gb,
         }
     }
 
@@ -3379,8 +3371,9 @@ impl App {
         }
         let (shader, choices) = match self.playing_platform() {
             Platform::Gba | Platform::Gbav => (&mut self.state.shader_gba, &Shader::GBA[..]),
-            Platform::Gb => (&mut self.state.shader_gb, &Shader::GB[..]),
-            Platform::Gbc => (&mut self.state.shader_gbc, &Shader::GB[..]),
+            Platform::Gb | Platform::Gbc | Platform::Pico8 => {
+                (&mut self.state.shader_gb, &Shader::GB[..])
+            }
         };
         *shader = shader.step(choices, right);
         let said = match *shader {
@@ -3431,8 +3424,7 @@ impl App {
         if action == Action::ColourCorrectionToggle {
             let row = match self.playing_platform() {
                 Platform::Gba | Platform::Gbav => QuickRow::GbaColourCorrection,
-                Platform::Gb => QuickRow::GbColourCorrection,
-                Platform::Gbc => QuickRow::GbcColourCorrection,
+                Platform::Gb | Platform::Gbc | Platform::Pico8 => QuickRow::GbColourCorrection,
             };
             self.change_setting(row, true);
             let said = match self.colour_correction() {
@@ -6458,7 +6450,7 @@ fn free_stamp(taken: &[String], now: i64) -> String {
 fn bezel_slot(platform: Platform) -> usize {
     match platform {
         Platform::Gba | Platform::Gbav => 0,
-        Platform::Gb => 1,
+        Platform::Gb | Platform::Pico8 => 1,
         Platform::Gbc => 2,
     }
 }
