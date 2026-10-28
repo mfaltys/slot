@@ -17,6 +17,10 @@ const MARGIN: Duration = Duration::from_micros(1500);
 
 const LOG_SYNC: Duration = Duration::from_secs(1);
 
+/// How many menu-open frames get a per-phase trace line. A menu that sits open without freezing
+/// stops logging after this; a freeze stops it earlier, leaving the last phase as the culprit.
+const MENU_TRACE_FRAMES: u32 = 600;
+
 struct Pacer {
     last_return: Option<Instant>,
     period: Duration,
@@ -151,16 +155,18 @@ pub fn run() {
     frontend.drive_emulator();
     let mut pacer = Pacer::new();
     let (mut frames, mut missed, mut early) = (0u32, 0u32, 0u32);
-    let mut menu_marked = false;
+    let mut menu_frames = 0u32;
     loop {
         pacer.wait();
         let began = Instant::now();
         input.steer_with_stick(frontend.app().left_stick_dpad());
         frontend.advance(&mut input);
-        let mark_menu = !menu_marked && frontend.app().in_game_menu().is_some();
-        if mark_menu {
+        let mut mark = 0u32;
+        if frontend.app().in_game_menu().is_some() && menu_frames < MENU_TRACE_FRAMES {
+            menu_frames += 1;
+            mark = menu_frames;
             eprintln!(
-                "slot: menu: advance done at {:.1} ms",
+                "slot: menu: f{mark} advance {:.1} ms",
                 slot::boot_time::ms()
             );
         }
@@ -180,13 +186,15 @@ pub fn run() {
             return;
         }
         frontend.step_emulator(pacer.period, STEP_TIMEOUT);
-        if mark_menu {
-            eprintln!("slot: menu: emu stepped at {:.1} ms", slot::boot_time::ms());
+        if mark > 0 {
+            eprintln!("slot: menu: f{mark} emu {:.1} ms", slot::boot_time::ms());
         }
         frontend.render(&mut compositor, window);
-        if mark_menu {
-            eprintln!("slot: menu: rendered at {:.1} ms", slot::boot_time::ms());
-            menu_marked = true;
+        if mark > 0 {
+            eprintln!(
+                "slot: menu: f{mark} rendered {:.1} ms",
+                slot::boot_time::ms()
+            );
         }
         let swap = Instant::now();
         let work = swap - began;
@@ -195,8 +203,11 @@ pub fn run() {
             frontend.stop();
             return;
         }
-        if mark_menu {
-            eprintln!("slot: menu: swapped at {:.1} ms", slot::boot_time::ms());
+        if mark > 0 {
+            eprintln!(
+                "slot: menu: f{mark} swapped {:.1} ms",
+                slot::boot_time::ms()
+            );
         }
         let swap_took = swap.elapsed();
         slot::latency::swapped(swap_took.as_secs_f64() * 1000.0);
