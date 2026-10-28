@@ -2862,7 +2862,12 @@ impl App {
                 }
                 Action::Eject => self.eject(),
                 Action::GameMenu => self.game_menu_shortcut(),
-                Action::QuickMenu => self.tap_in_game_menu(Some(QuickRow::PLAY[0])),
+                // The in-game menu hard-locks the frontend on FAKE-08 (a cart face the
+                // workers never deliver wedges render's blocking wait), so the menu tap is
+                // inert for PICO-8 until that is fixed. Savestates still work via shortcuts.
+                Action::QuickMenu if self.core != Core::Fake08 => {
+                    self.tap_in_game_menu(Some(QuickRow::PLAY[0]))
+                }
                 Action::Polaroids => self.double_tap_states(),
                 Action::SaveState => self.save_state(),
                 Action::Screenshot if self.screen >= 1.0 && self.game_visible() => {
