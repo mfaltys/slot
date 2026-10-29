@@ -1,0 +1,30 @@
+--- a/source/vm.cpp
++++ b/source/vm.cpp
+@@ -170,18 +170,15 @@
+     // Push the eris.init_persist_all function on the top of the lua stack (or nil if it doesn't exist)
+     // we call this function to establish the default global state of things not to save in the save state
+     // needs to be called after globals are loaded but before the cart is run, or _init is called
+-    //TODO: move these calls to the glue code?
+-    // lua_getglobal(luaState, "eris");
+-	// lua_getfield(luaState, -1, "init_persist_all");
+-
+-    // if (lua_pcall(luaState, 0, 0, 0)){
+-    //     Logger_Write("Error setting up lua persistence: %s\n", lua_tostring(luaState, -1));
+-    //     lua_pop(luaState, 1);
+-    //     return false;
+-    // }
+-
+-    // //pop the eris.init_persist_all fuction off the stack now that we're done with it
+-    // lua_pop(luaState, 1);
++    lua_getglobal(luaState, "eris");
++    lua_getfield(luaState, -1, "init_persist_all");
++
++    if (lua_pcall(luaState, 0, 0, 0)){
++        Logger_Write("Error setting up lua persistence: %s\n", lua_tostring(luaState, -1));
++        lua_pop(luaState, 2);
++    } else {
++        lua_pop(luaState, 1);
++    }
+ 
+ 
+     return true;
