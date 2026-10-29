@@ -2684,6 +2684,20 @@ impl App {
         self.core
     }
 
+    /// FAKE-08's cart art hard-locks any menu render (a cart face the workers never
+    /// deliver wedges the render wait), so the menu is kept inert while a PICO-8 cart
+    /// is in focus: selected on the shelf, or playing. On the shelf `self.core` can be
+    /// stale, so the selected cart decides there.
+    fn pico8_in_focus(&self) -> bool {
+        match &self.phase {
+            Phase::Playing { .. } => self.core == Core::Fake08,
+            _ => {
+                let shelf = self.shelf();
+                shelf.carts.get(shelf.index).is_some_and(|c| c.platform == Platform::Pico8)
+            }
+        }
+    }
+
     pub fn link_reload_done(&mut self) {
         let Some(reload) = self.reload.take() else {
             return;
@@ -2838,7 +2852,7 @@ impl App {
                 Action::ShelfRight | Action::GbaDown(Btn::Right) => {
                     self.shelf_mut().hold_right(now)
                 }
-                Action::QuickMenu => self.open_quick_menu(),
+                Action::QuickMenu if !self.pico8_in_focus() => self.open_quick_menu(),
                 Action::GbaDown(Btn::A) => self.play_held = Some(now),
                 Action::GbaUp(Btn::A) => {
                     if self.play_held.take().is_some() {
@@ -2862,10 +2876,9 @@ impl App {
                 }
                 Action::Eject => self.eject(),
                 Action::GameMenu => self.game_menu_shortcut(),
-                // The in-game menu hard-locks the frontend on FAKE-08 (a cart face the
-                // workers never deliver wedges render's blocking wait), so the menu tap is
-                // inert for PICO-8 until that is fixed. Savestates still work via shortcuts.
-                Action::QuickMenu if self.core != Core::Fake08 => {
+                // The menu is inert for PICO-8 (see pico8_in_focus). Savestates still
+                // work via shortcuts.
+                Action::QuickMenu if !self.pico8_in_focus() => {
                     self.tap_in_game_menu(Some(QuickRow::PLAY[0]))
                 }
                 Action::Polaroids => self.double_tap_states(),
