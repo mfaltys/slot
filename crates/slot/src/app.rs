@@ -8808,20 +8808,22 @@ impl App {
         }
         let pairing = matches!(
             self.phase,
-            Phase::Romm { view: crate::romm::screen::View::Pairing }
+            Phase::Romm {
+                view: crate::romm::screen::View::Pairing
+            }
         );
         let screen = self.network_screen();
         if pairing {
             self.draw_romm_pairing(out);
         } else {
             slot_ui::NetworkList {
-            lines: &self.net_lines,
-            first: screen.as_ref().map_or(0, |s| s.first),
-            total: screen.as_ref().and_then(|s| s.total),
-            icons: self.net_icons,
-            selected: screen.as_ref().map_or(0, |s| s.selected),
-            message: self.net_message,
-            pointer: self.quick_menu_faces.as_ref().map(|f| f.pointer),
+                lines: &self.net_lines,
+                first: screen.as_ref().map_or(0, |s| s.first),
+                total: screen.as_ref().and_then(|s| s.total),
+                icons: self.net_icons,
+                selected: screen.as_ref().map_or(0, |s| s.selected),
+                message: self.net_message,
+                pointer: self.quick_menu_faces.as_ref().map(|f| f.pointer),
                 ground: self.menu_ground(),
                 canvas: self.canvas(),
             }
