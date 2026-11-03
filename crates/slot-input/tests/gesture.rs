@@ -1,6 +1,6 @@
 use slot_input::RawEvent::{Down, Up};
 use slot_input::{
-    Action::*, Btn, Btn::*, Chord, Gestures, Mod, RawEvent, MENU_HOLD_MS, POWER_HOLD_MS,
+    Action::*, Btn, Btn::*, Chord, Context, Gestures, Mod, RawEvent, MENU_HOLD_MS, POWER_HOLD_MS,
     SELECT_CHORD_MS, SELECT_TAP_MS, VOLUME_REPEAT_DELAY_MS, VOLUME_REPEAT_MS,
 };
 
@@ -251,6 +251,78 @@ fn r2_double_tap_latches_and_single_press_clears() {
     assert!(g.feed(Up(R2), 150).is_empty());
     g.feed(Down(R2), 5000);
     assert_eq!(g.feed(Up(R2), 5050), vec![FfStop]);
+}
+
+fn with_toggle() -> Gestures {
+    let mut g = gestures();
+    let mut shortcuts = today();
+    shortcuts.push((
+        Chord {
+            modifier: None,
+            button: R1,
+        },
+        FfToggle,
+    ));
+    g.set_shortcuts(shortcuts);
+    g
+}
+
+#[test]
+fn a_toggle_press_starts_fast_forward_and_the_next_press_stops_it() {
+    let mut g = with_toggle();
+    assert_eq!(g.feed(Down(R1), 0), vec![FfStart]);
+    assert!(
+        g.feed(Up(R1), 50).is_empty(),
+        "the release stopped the toggle"
+    );
+    assert!(g.ff_latched(), "a toggled run is not held on like a latch");
+    assert_eq!(g.feed(Down(R1), 5000), vec![FfStop]);
+    assert!(g.feed(Up(R1), 5050).is_empty());
+    assert!(!g.ff_latched());
+}
+
+#[test]
+fn the_fast_forward_button_stops_a_toggled_run() {
+    let mut g = with_toggle();
+    g.feed(Down(R1), 0);
+    g.feed(Up(R1), 50);
+    assert!(g.feed(Down(R2), 5000).is_empty());
+    assert_eq!(g.feed(Up(R2), 5050), vec![FfStop]);
+    assert_eq!(
+        g.feed(Down(R1), 6000),
+        vec![FfStart],
+        "the toggle lost its place"
+    );
+}
+
+#[test]
+fn the_toggle_stops_a_held_fast_forward() {
+    let mut g = with_toggle();
+    assert_eq!(g.feed(Down(R2), 0), vec![FfStart]);
+    assert_eq!(g.feed(Down(R1), 100), vec![FfStop]);
+    assert!(g.feed(Up(R1), 150).is_empty());
+    assert!(
+        g.feed(Up(R2), 200).is_empty(),
+        "letting go of R2 reached the game"
+    );
+}
+
+#[test]
+fn rewind_stops_a_toggled_run() {
+    let mut g = with_toggle();
+    g.feed(Down(R1), 0);
+    g.feed(Up(R1), 50);
+    assert_eq!(g.feed(Down(L2), 200), vec![FfStop, RewindStart]);
+}
+
+#[test]
+fn a_toggle_press_during_a_rewind_does_nothing() {
+    let mut g = with_toggle();
+    g.feed(Down(L2), 0);
+    assert!(g.feed(Down(R1), 50).is_empty());
+    assert!(g.feed(Up(R1), 100).is_empty());
+    assert_eq!(g.feed(Up(L2), 150), vec![RewindStop]);
+    assert!(!g.ff_latched());
 }
 
 #[test]
@@ -939,4 +1011,40 @@ fn a_press_seen_during_a_capture_leaves_nothing_behind() {
         vec![GbaDown(R1)],
         "a stale L1 completed the pair"
     );
+}
+
+#[test]
+fn select_tap_on_the_shelf() {
+    let mut g = gestures();
+    g.set_context(Context::Shelf);
+    assert!(g.feed(Down(Select), 0).is_empty());
+    assert_eq!(g.feed(Up(Select), 80), vec![GbaDown(Select), SelectTap]);
+}
+
+#[test]
+fn no_select_tap_in_game() {
+    let mut g = gestures();
+    assert!(g.feed(Down(Select), 0).is_empty());
+    assert!(!g.feed(Up(Select), 80).contains(&SelectTap));
+}
+
+#[test]
+fn a_select_combo_is_no_tap() {
+    let mut g = gestures();
+    g.set_context(Context::Shelf);
+    let mut log = g.feed(Down(Select), 0);
+    log.extend(g.feed(Down(Btn::X), 40));
+    log.extend(g.feed(Up(Btn::X), 80));
+    log.extend(g.feed(Up(Select), 120));
+    assert!(!log.contains(&SelectTap), "{log:?}");
+}
+
+#[test]
+fn a_select_hold_is_no_tap() {
+    let mut g = gestures();
+    g.set_context(Context::Shelf);
+    let mut log = g.feed(Down(Select), 0);
+    log.extend(g.tick(700));
+    log.extend(g.feed(Up(Select), 800));
+    assert!(!log.contains(&SelectTap), "{log:?}");
 }

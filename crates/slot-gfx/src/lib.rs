@@ -24,11 +24,14 @@ mod quad;
 mod shaders;
 mod surface;
 
-pub use bezel::{framed, game_rect, lifted_rect, screen_rect};
-pub use draw::{Draw, TexId};
+pub use bezel::{bezel_column, framed, game_rect, hole_on_top, lifted_rect, screen_rect};
+pub use draw::{paper_bounds, paper_flap_shows, Draw, TexId};
 pub use fbdev::{egl_error, panel_mode, panel_size, FbdevSurface};
 pub use fbo::{canvas_size, Compositor, BACKDROP};
-pub use grade::{blue_light_gain, dim_gain, BLUE_LIGHT_MAX, DIM_MAX};
+pub use grade::{
+    blue_light_gain, contrast_boost, dim_gain, saturation_boost, BLUE_LIGHT_MAX, CONTRAST_MAX,
+    DIM_MAX, SATURATION_MAX,
+};
 #[cfg(target_os = "macos")]
 pub use headless::HeadlessSurface;
 #[cfg(feature = "host")]

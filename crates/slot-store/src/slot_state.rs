@@ -9,16 +9,21 @@ use crate::zone::Zone;
 pub const BRIGHTNESS_MAX: u8 = 9;
 pub const BLUE_LIGHT_MAX: u8 = 9;
 pub const DIM_MAX: u8 = 9;
+pub const SATURATION_MAX: u8 = 9;
+pub const CONTRAST_MAX: u8 = 9;
+pub const SUNLIGHT_MAX: u8 = 10;
 pub const VOLUME_MAX: u8 = 100;
 
 const UTC_OFFSET_MIN: i16 = -720;
 const UTC_OFFSET_MAX: i16 = 840;
 
-pub const FF_SPEEDS: [u8; 5] = [0, 2, 3, 4, 6];
+pub const FF_SPEEDS: [u8; 6] = [0, 6, 8, 12, 16, 24];
+
+const FF_SPEED_TEXT: [&str; 6] = ["0", "1.5", "2", "3", "4", "6"];
 
 pub const LID_OFF_MIN: [u8; 6] = [1, 3, 5, 10, 15, 30];
 
-pub const FF_SPEED_DEFAULT: u8 = 6;
+pub const FF_SPEED_DEFAULT: u8 = 24;
 
 pub const RECENTS_MAX: usize = 10;
 
@@ -111,6 +116,7 @@ impl WallpaperTint {
 pub enum WallpaperPick {
     None,
     Random,
+    Shelf,
     #[default]
     Default,
     Blur,
@@ -122,6 +128,7 @@ impl WallpaperPick {
         match self {
             WallpaperPick::None => "none".to_string(),
             WallpaperPick::Random => "random".to_string(),
+            WallpaperPick::Shelf => "shelf".to_string(),
             WallpaperPick::Default => "default".to_string(),
             WallpaperPick::Blur => "default_blur".to_string(),
             WallpaperPick::File(name) => name.clone(),
@@ -132,6 +139,7 @@ impl WallpaperPick {
         match self {
             WallpaperPick::None => "None".to_string(),
             WallpaperPick::Random => "Random".to_string(),
+            WallpaperPick::Shelf => "Shelf".to_string(),
             WallpaperPick::Default => "Default".to_string(),
             WallpaperPick::Blur => "DEFAULT BLUR".to_string(),
             WallpaperPick::File(name) => name
@@ -146,6 +154,7 @@ impl WallpaperPick {
         match value {
             "none" => WallpaperPick::None,
             "random" => WallpaperPick::Random,
+            "shelf" => WallpaperPick::Shelf,
             "" | "default" => WallpaperPick::Default,
             "default_blur" => WallpaperPick::Blur,
             other => WallpaperPick::File(other.to_string()),
@@ -177,11 +186,15 @@ impl BezelPick {
             BezelPick::None => "None".to_string(),
             BezelPick::Default => "Default".to_string(),
             BezelPick::Ags102 => "AGS-102".to_string(),
-            BezelPick::File(name) => name
-                .rsplit_once('.')
-                .map(|(stem, _)| stem)
-                .unwrap_or(name)
-                .to_string(),
+            BezelPick::File(name) => {
+                let stem = name
+                    .rsplit_once('.')
+                    .map_or(name.as_str(), |(stem, _)| stem);
+                match bezel_scale(name) {
+                    Some(scale) => stem[..stem.len() - scale.bezel_suffix().len()].to_string(),
+                    None => stem.to_string(),
+                }
+            }
         }
     }
 
@@ -204,7 +217,31 @@ pub enum Scale {
     FullScreen,
 }
 
+pub fn bezel_scale(name: &str) -> Option<Scale> {
+    let stem = name.rsplit_once('.').map_or(name, |(stem, _)| stem);
+    let stem = stem.to_ascii_lowercase();
+    [Scale::SpFrame, Scale::Integer, Scale::Fit]
+        .into_iter()
+        .find(|scale| stem.ends_with(scale.bezel_suffix()))
+}
+
+pub fn bezel_for_scale(name: &str, scale: Scale) -> Option<String> {
+    let from = bezel_scale(name)?;
+    let (stem, ext) = name.rsplit_once('.')?;
+    let base = &stem[..stem.len() - from.bezel_suffix().len()];
+    Some(format!("{base}{}.{ext}", scale.bezel_suffix()))
+}
+
 impl Scale {
+    pub fn bezel_suffix(self) -> &'static str {
+        match self {
+            Scale::SpFrame => "_spscreen",
+            Scale::Integer => "_integer",
+            Scale::Fit => "_fit",
+            Scale::FullScreen => "_fullscreen",
+        }
+    }
+
     pub fn name(self) -> &'static str {
         match self {
             Scale::SpFrame => "sp-frame",
@@ -307,6 +344,8 @@ pub struct SlotState {
     pub brightness: u8,
     pub blue_light: u8,
     pub dim: u8,
+    pub saturation: u8,
+    pub contrast: u8,
     pub volume: u8,
     pub volume_hp: u8,
     pub muted: bool,
@@ -314,6 +353,7 @@ pub struct SlotState {
     pub clock_set: bool,
     pub zone: Zone,
     pub clock_24h: bool,
+    pub network_time: bool,
     pub rumble: bool,
     pub ff_speed: u8,
     pub ff_sound: bool,
@@ -334,6 +374,7 @@ pub struct SlotState {
     pub wallpaper_tint: WallpaperTint,
     pub show_recents: bool,
     pub show_titles: bool,
+    pub wifi_off: bool,
     pub left_stick_dpad: bool,
     pub lid_off_min: Option<u8>,
     pub bezel_gba: BezelPick,
@@ -411,11 +452,25 @@ pub enum Shader {
     Grid,
     Dot,
     Simpletex,
+    Shimmerless,
 }
 
 impl Shader {
-    pub const GBA: [Shader; 4] = [Shader::Off, Shader::Lcd3x, Shader::Grid, Shader::Dot];
-    pub const GB: [Shader; 4] = [Shader::Off, Shader::Lcd3x, Shader::Grid, Shader::Simpletex];
+    pub const GBA: [Shader; 5] = [
+        Shader::Off,
+        Shader::Lcd3x,
+        Shader::Grid,
+        Shader::Dot,
+        Shader::Shimmerless,
+    ];
+    pub const GBA_3_2: [Shader; 4] = [Shader::Off, Shader::Lcd3x, Shader::Grid, Shader::Dot];
+    pub const GB: [Shader; 5] = [
+        Shader::Off,
+        Shader::Lcd3x,
+        Shader::Grid,
+        Shader::Simpletex,
+        Shader::Shimmerless,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -424,6 +479,7 @@ impl Shader {
             Shader::Grid => "grid",
             Shader::Dot => "dot",
             Shader::Simpletex => "simpletex",
+            Shader::Shimmerless => "shimmerless",
         }
     }
 
@@ -434,6 +490,7 @@ impl Shader {
             Shader::Grid,
             Shader::Dot,
             Shader::Simpletex,
+            Shader::Shimmerless,
         ]
         .into_iter()
         .find(|s| s.name() == name)
@@ -458,6 +515,8 @@ impl Default for SlotState {
             brightness: 5,
             blue_light: 0,
             dim: 0,
+            saturation: 0,
+            contrast: 0,
             volume: 60,
             volume_hp: 60,
             muted: false,
@@ -465,6 +524,7 @@ impl Default for SlotState {
             clock_set: false,
             zone: Zone::default(),
             clock_24h: true,
+            network_time: false,
             rumble: true,
             ff_speed: FF_SPEED_DEFAULT,
             ff_sound: false,
@@ -485,6 +545,7 @@ impl Default for SlotState {
             wallpaper_tint: WallpaperTint::Off,
             show_recents: false,
             show_titles: false,
+            wifi_off: false,
             left_stick_dpad: true,
             lid_off_min: None,
             bezel_gba: BezelPick::Ags102,
@@ -554,7 +615,7 @@ fn write_list(root: &Path, name: &str, list: &[Recent]) -> std::io::Result<()> {
 
 pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
     let mut text = format!(
-        "cart={}\ncart_platform={}\nbrightness={}\nblue_light={}\nvolume={}\nvolume_hp={}\nmuted={}\nmuted_hp={}\nclock_set={}\nzone={}\nclock_24h={}\nrumble={}\nff_speed={}\nff_sound={}\ncolour_correction_gba={}\ncolour_correction_gb={}\nshader_gba={}\nshader_gb={}\neject_save={}\nturbo={}\nrewind={}\ngb_palettes={}\ngb_palette={}\nappearance={}\nwallpaper={}\n",
+        "cart={}\ncart_platform={}\nbrightness={}\nblue_light={}\nvolume={}\nvolume_hp={}\nmuted={}\nmuted_hp={}\nclock_set={}\nzone={}\nclock_24h={}\nnetwork_time={}\nrumble={}\nff_speed={}\nff_sound={}\ncolour_correction_gba={}\ncolour_correction_gb={}\nshader_gba={}\nshader_gb={}\neject_save={}\nturbo={}\nrewind={}\ngb_palettes={}\ngb_palette={}\nappearance={}\nwallpaper={}\n",
         s.cart.as_deref().unwrap_or(""),
         s.cart_platform.map_or(String::new(), platform_key),
         s.brightness,
@@ -566,8 +627,9 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         s.clock_set as u8,
         s.zone.id(),
         s.clock_24h as u8,
+        s.network_time as u8,
         s.rumble as u8,
-        s.ff_speed,
+        ff_speed_text(s.ff_speed),
         s.ff_sound as u8,
         s.colour_correction_gba as u8,
         s.colour_correction_gb as u8,
@@ -586,9 +648,14 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         s.colour_correction_gbc as u8
     ));
     text.push_str(&format!("shader_gbc={}\n", s.shader_gbc.name()));
+    text.push_str(&format!("saturation={}\n", s.saturation));
+    text.push_str(&format!("contrast={}\n", s.contrast));
     text.push_str(&format!("wallpaper_tint={}\n", s.wallpaper_tint.key()));
     text.push_str(&format!("show_recents={}\n", s.show_recents as u8));
     text.push_str(&format!("show_titles={}\n", s.show_titles as u8));
+    if s.wifi_off {
+        text.push_str("wifi_off=1\n");
+    }
     text.push_str(&format!("left_stick_dpad={}\n", s.left_stick_dpad as u8));
     text.push_str(&format!("auto_load={}\n", s.auto_load as u8));
     if let Some(min) = s.lid_off_min {
@@ -626,6 +693,8 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut brightness = None;
     let mut blue_light = None;
     let mut dim = None;
+    let mut saturation = None;
+    let mut contrast = None;
     let mut volume = None;
     let mut volume_hp = None;
     let mut muted = None;
@@ -634,6 +703,7 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut utc_offset_min = None;
     let mut zone = None;
     let mut clock_24h = None;
+    let mut network_time = None;
     let mut rumble = None;
     let mut ff_speed = None;
     let mut ff_sound = None;
@@ -655,6 +725,7 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut wallpaper_tint = None;
     let mut show_recents = None;
     let mut show_titles = None;
+    let mut wifi_off = None;
     let mut left_stick_dpad = None;
     let mut lid_off_min = None;
     let mut bezel_gba = None;
@@ -680,6 +751,8 @@ fn parse(text: &str) -> Option<SlotState> {
             "brightness" => brightness = Some(level(value, BRIGHTNESS_MAX)?),
             "blue_light" => blue_light = Some(level(value, BLUE_LIGHT_MAX)?),
             "dim" => dim = level(value, DIM_MAX),
+            "saturation" => saturation = level(value, SATURATION_MAX),
+            "contrast" => contrast = level(value, CONTRAST_MAX),
             "volume" => volume = Some(level(value, VOLUME_MAX)?),
             "volume_hp" => volume_hp = Some(level(value, VOLUME_MAX)?),
             "muted" => muted = Some(level(value, 1)? == 1),
@@ -688,6 +761,7 @@ fn parse(text: &str) -> Option<SlotState> {
             "utc_offset_min" => utc_offset_min = Some(offset(value)?),
             "zone" => zone = Zone::parse(value),
             "clock_24h" => clock_24h = flag(value),
+            "network_time" => network_time = flag(value),
             "rumble" => rumble = flag(value),
             "ff_speed" => ff_speed = ff_speed_value(value),
             "ff_sound" => ff_sound = flag(value),
@@ -707,6 +781,7 @@ fn parse(text: &str) -> Option<SlotState> {
             "wallpaper_tint" => wallpaper_tint = WallpaperTint::parse(value),
             "show_recents" => show_recents = flag(value),
             "show_titles" => show_titles = flag(value),
+            "wifi_off" => wifi_off = flag(value),
             "left_stick_dpad" => left_stick_dpad = flag(value),
             "lid_off_min" => lid_off_min = value.parse().ok().filter(|m| LID_OFF_MIN.contains(m)),
             "bezel_gba" => bezel_gba = Some(BezelPick::parse(value)),
@@ -735,6 +810,8 @@ fn parse(text: &str) -> Option<SlotState> {
         brightness: brightness?,
         blue_light: blue_light?,
         dim: dim.unwrap_or(fallback.dim),
+        saturation: saturation.unwrap_or(fallback.saturation),
+        contrast: contrast.unwrap_or(fallback.contrast),
         volume: volume?,
         volume_hp: volume_hp.or(volume)?,
         muted: muted?,
@@ -742,6 +819,7 @@ fn parse(text: &str) -> Option<SlotState> {
         clock_set: clock_set?,
         zone: zone.or_else(|| utc_offset_min.map(|m| Zone::for_offset(i64::from(m), now())))?,
         clock_24h: clock_24h.unwrap_or(fallback.clock_24h),
+        network_time: network_time.unwrap_or(fallback.network_time),
         rumble: rumble.unwrap_or(fallback.rumble),
         ff_speed: ff_speed.unwrap_or(fallback.ff_speed),
         ff_sound: ff_sound.unwrap_or(fallback.ff_sound),
@@ -769,6 +847,7 @@ fn parse(text: &str) -> Option<SlotState> {
         wallpaper_tint: wallpaper_tint.unwrap_or(fallback.wallpaper_tint),
         show_recents: show_recents.unwrap_or(fallback.show_recents),
         show_titles: show_titles.unwrap_or(fallback.show_titles),
+        wifi_off: wifi_off.unwrap_or(fallback.wifi_off),
         left_stick_dpad: left_stick_dpad.unwrap_or(fallback.left_stick_dpad),
         lid_off_min,
         bezel_gba: bezel_gba.unwrap_or(fallback.bezel_gba),
@@ -816,7 +895,15 @@ fn offset(value: &str) -> Option<i16> {
 }
 
 fn ff_speed_value(value: &str) -> Option<u8> {
-    value.parse().ok().filter(|n| FF_SPEEDS.contains(n))
+    FF_SPEED_TEXT
+        .iter()
+        .position(|t| *t == value)
+        .map(|i| FF_SPEEDS[i])
+}
+
+fn ff_speed_text(speed: u8) -> &'static str {
+    let at = |speed| FF_SPEEDS.iter().position(|s| *s == speed);
+    FF_SPEED_TEXT[at(speed).or(at(FF_SPEED_DEFAULT)).unwrap_or(0)]
 }
 
 fn level(value: &str, max: u8) -> Option<u8> {

@@ -13,6 +13,9 @@ Shaders make the picture look more like a real handheld screen.
 | LCD3x          | LCD3x                       |
 | Grid (default) | Grid                        |
 | Dot            | Simpletex (default)         |
+| Shimmerless    | Shimmerless                 |
+
+Shimmerless is only available for GBA on 4:3 devices. GBA on a 3:2 device is always exactly 3x resolution and Shimmerless has no visual impact.
 
 <kbd>SELECT</kbd> + <kbd>A</kbd> and <kbd>SELECT</kbd> + <kbd>B</kbd> step through them while you play.
 
@@ -47,11 +50,11 @@ RG35XXSP, RG35XX Plus, RG35XX-H and RG28XX
 
 **Game Boy and Game Boy Color**
 
-| Scale    | Does                                                                       |
-|----------|----------------------------------------------------------------------------|
-| SP Frame | The way a GBA SP shows them: in the middle of a GBA-sized screen (default) |
-| Integer  | The biggest whole-number size                                              |
-| Fit      | As big as the whole picture fits                                           |
+| Scale     | Does                                                                       |
+|-----------|----------------------------------------------------------------------------|
+| SP Screen | The way a GBA SP shows them: in the middle of a GBA-sized screen (default) |
+| Integer   | The biggest whole-number size                                              |
+| Fit       | As big as the whole picture fits                                           |
 
 **GBA**
 
@@ -93,9 +96,9 @@ enough to blur that into a steady image. On a modern screen you see the flicker.
 |----------------|-------------------------------------------------------------|
 | Off            | Shows every frame as it is (default)                        |
 | Mix            | Blends each frame with the one before                       |
-| LCD Ghosting   | Leaves a fading trail, like the original screens. mGBA only |
+| Ghosting       | Leaves a fading trail, like the original screens. mGBA only |
 
-A game on gpSP set to LCD Ghosting gets Mix.
+A game on gpSP set to Ghosting gets Mix.
 
 ## Bezels
 
@@ -124,3 +127,8 @@ is still readable in the dark.
 
 **Dim** darkens the whole picture in software, past what the backlight's lowest step can reach, for a room darker still.
 It sits under Brightness and Blue Light on the same General page, and at the end of the in-game Screen page.
+
+## Saturation and contrast
+
+You can adjust saturation and contrast in two places. Settings → Screen → General if on the shelf and at the end of the in-game
+Screen page. Both go from Off to 9 and are applied globally.

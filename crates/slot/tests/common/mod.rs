@@ -275,6 +275,10 @@ impl Snapshot for CoreSnapshot {
     fn load(&self, state: Vec<u8>) {
         self.with(|c| c.unserialize(&state).expect("unserialize"));
     }
+
+    fn reset(&self) {
+        self.with(|c| c.reset());
+    }
 }
 
 #[derive(Clone, Default)]
@@ -639,4 +643,31 @@ fn feed_through(
             apply(a, action);
         }
     }
+}
+
+pub fn connect(a: &mut App) {
+    use slot::wifi::Backend;
+    let mut fake = slot::wifi::Fake::demo();
+    fake.add("Home", "password", false);
+    a.set_wifi(slot::wifi::Wifi::inline(Box::new(fake)));
+    let tick = |a: &mut App| {
+        let t = a.now();
+        a.tick_ms(t + 1_000);
+    };
+    for _ in 0..10 {
+        if a.wifi().held {
+            break;
+        }
+        tick(a);
+    }
+    assert!(a.wifi().held, "the app never held the radio");
+    a.wifi_send(slot::wifi::Cmd::Join {
+        ssid: "Home".into(),
+        password: "password".into(),
+        hidden: false,
+    });
+    for _ in 0..4 {
+        tick(a);
+    }
+    assert!(a.wifi_up(), "the fake network did not connect");
 }

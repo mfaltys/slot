@@ -10,10 +10,13 @@ use crate::{CartFace, QuickRow};
 pub enum Toast {
     StateSaved,
     StateLoaded,
+    GameReset,
     ShotCaptured,
     ShotFailed,
     NeedsGpsp,
+    NeedsMgba,
     NoLink,
+    NoWifi,
     LinkEnded,
     PeerEnded,
     BiosMismatch,
@@ -24,23 +27,28 @@ pub enum Toast {
     ShaderGrid,
     ShaderDot,
     ShaderSimpletex,
+    ShaderShimmerless,
     CardUnwritable,
     CardRepair,
     CardRepairCharge,
     CardRepaired,
     CardRepairFailed,
+    Forgotten,
     Palette(GbColors),
     Duplicate(QuickRow),
 }
 
 impl Toast {
-    const FIXED: [Toast; 21] = [
+    const FIXED: [Toast; 26] = [
         Toast::StateSaved,
         Toast::StateLoaded,
+        Toast::GameReset,
         Toast::ShotCaptured,
         Toast::ShotFailed,
         Toast::NeedsGpsp,
+        Toast::NeedsMgba,
         Toast::NoLink,
+        Toast::NoWifi,
         Toast::LinkEnded,
         Toast::PeerEnded,
         Toast::BiosMismatch,
@@ -51,11 +59,13 @@ impl Toast {
         Toast::ShaderGrid,
         Toast::ShaderDot,
         Toast::ShaderSimpletex,
+        Toast::ShaderShimmerless,
         Toast::CardUnwritable,
         Toast::CardRepair,
         Toast::CardRepairCharge,
         Toast::CardRepaired,
         Toast::CardRepairFailed,
+        Toast::Forgotten,
     ];
 
     pub fn all() -> Vec<Toast> {
@@ -124,12 +134,15 @@ impl Toast {
         match self {
             Toast::StateSaved => "State Saved",
             Toast::StateLoaded => "State Loaded",
+            Toast::GameReset => "Game Reset",
             Toast::ShotCaptured => "Screenshot Captured",
             Toast::ShotFailed => "Screenshot Failed",
             Toast::NeedsGpsp => "Please switch to gpSP",
+            Toast::NeedsMgba => "Please switch to mGBA",
             Toast::NoLink => "No link support",
+            Toast::NoWifi => "This device has no Wi-Fi",
             Toast::LinkEnded => "Link ended",
-            Toast::PeerEnded => "Link was ended",
+            Toast::PeerEnded => "Other player ended the link",
             Toast::BiosMismatch => "BIOS does not match",
             Toast::ColourOn => "Correction On",
             Toast::ColourOff => "Correction Off",
@@ -138,10 +151,12 @@ impl Toast {
             Toast::ShaderGrid => "Shader: Grid",
             Toast::ShaderDot => "Shader: Dot",
             Toast::ShaderSimpletex => "Shader: Simpletex",
+            Toast::ShaderShimmerless => "Shader: Shimmerless",
             Toast::CardUnwritable => "Can't write to SD card",
             Toast::CardRepair | Toast::CardRepairCharge => "Can't write to SD card",
             Toast::CardRepaired => "SD card repaired",
             Toast::CardRepairFailed => "Card repair failed",
+            Toast::Forgotten => "Network forgotten",
             Toast::Palette(p) => p.label(),
             Toast::Duplicate(_) => "",
         }
@@ -187,9 +202,11 @@ fn setting(toast: Toast) -> Setting {
             middle: OUT_H as f32 / 2.0,
         },
         false => Setting {
-            w: match toast.icon() {
-                Some(_) => WARNING_W,
-                None => TOAST_W,
+            w: match (toast.icon(), toast) {
+                (Some(_), _) | (_, Toast::NeedsMgba | Toast::NoWifi | Toast::PeerEnded) => {
+                    WARNING_W
+                }
+                _ => TOAST_W,
             },
             h: TOAST_H,
             px: TOAST_PX,
@@ -219,6 +236,10 @@ fn detail_h(toast: Toast) -> u32 {
 }
 
 pub fn toast_face(toast: Toast) -> CartFace {
+    toast_face_text(toast, &toast.text())
+}
+
+pub fn toast_face_text(toast: Toast, said: &str) -> CartFace {
     let Some(font) = text::label_font() else {
         return CartFace {
             rgba: Vec::new(),
@@ -231,7 +252,7 @@ pub fn toast_face(toast: Toast) -> CartFace {
     let room = icon
         .as_ref()
         .map_or(s.w, |(_, iw, _)| s.w.saturating_sub(iw + ICON_GAP));
-    let layout = text::fit(font, &toast.text(), room as f32, 1, s.px, s.min_px);
+    let layout = text::fit(font, said, room as f32, 1, s.px, s.min_px);
     let (mut cov, tinted) = match icon {
         Some(icon) => beside(icon, font, &layout, &s),
         None => (text::coverage(s.w, s.h, &layout), 0..0),

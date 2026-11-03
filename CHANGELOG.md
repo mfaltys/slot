@@ -4,6 +4,38 @@
 
 - Dim, a new row on Settings → Screen → General and at the end of the in-game Screen page, scales the whole picture down in software. The backlight's lowest step is as far as the hardware goes; Dim goes further, for playing in the dark. ([#189](https://github.com/BrandonKowalski/slot/issues/189))
 
+## [1.13.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.13.0)
+
+- OTA Updater: Open the menu on the shelf and pick Network → Check for Updates. It checks if there is a new release of slot or BaseOS.
+- Network is a new menu for Wi-Fi. It lists your saved networks, with Scan for Networks at the bottom to join a new one. A network that rejects your password offers to try another, and isn't saved.
+- Gamebit is a web UI for managing the card over Wi-Fi. Start it from Network, then go to `slot.local` and enter the pin or scan the QR code. You can add and remove games, saves, labels, guides, BIOS files and the boot logo, and browse the card's files.
+- On device Cart Studio where art can be fetched over Wi-Fi. Fetch Missing Art on the Network page gets labels for every game without one.
+- Set Automatically is a new row in Date & Time when Wi-Fi is set up. It keeps the clock right from network time.
+- `Shelf` is a new Wallpaper option that follows the shelf you're on.
+- slot now loads RetroArch's compressed saves. ([#165](https://github.com/BrandonKowalski/slot/issues/165))
+- Guides can wrap to the screen. Press X to turn it on, and each guide remembers its place, size and wrap setting. ([#176](https://github.com/BrandonKowalski/slot/issues/176))
+- Shimmerless shader is hidden for GBA on 3:2 screens as it has no effect.
+
+## [1.12.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.12.0)
+
+- Boktai's solar sensor works on mGBA. The sun follows the clock: none at night, brightest at noon. Sunlight Up and Sunlight Down are new shortcuts to set it by hand for the current session. ([#42](https://github.com/BrandonKowalski/slot/issues/42))
+- Shimmerless is a new shader on every system. It keeps pixels sharp and gives each one the same width, so the picture doesn't shimmer as it scrolls when the screen isn't a whole multiple of the game. ([#99](https://github.com/BrandonKowalski/slot/issues/99))
+- Saturation and Contrast are new rows in Settings → Screen → General and on the in-game Screen page. Both go from Off to 9 and apply to the whole screen. ([#79](https://github.com/BrandonKowalski/slot/issues/79))
+- A bezel can be made for one Scale by ending its name with `_spscreen`, `_integer` or `_fit`. It only shows under Bezel while that Scale is picked, and changing Scale switches to the version with the same name.
+- A bezel that's solid from just under the game to the bottom edge, like AGS-102, now puts the game at the top of the screen on 640×480 devices, for GBA, Game Boy and Game Boy Color. ([#159](https://github.com/BrandonKowalski/slot/issues/159))
+- The Default Game Boy Color bezel in Fit on 640×480 devices shows just the power light, without the cut-off POWER label beside it.
+- Reset Game is a new shortcut that starts the game over from power on. ([#168](https://github.com/BrandonKowalski/slot/issues/168))
+- Game guides: put a `.txt` with the game's name in `Guides/GBA`, `Guides/GB` or `Guides/GBC`, and Guide shows up in the in-game menu. ([#167](https://github.com/BrandonKowalski/slot/issues/167))
+- Game Boy and Game Boy Color games on mGBA no longer flash a frame of stray tiles and sprites when the screen comes back on, as in Pokémon Pinball when the ball moves between the top and bottom of the table. ([#169](https://github.com/BrandonKowalski/slot/issues/169))
+- Frame Blending's LCD Ghosting is now called Ghosting, and the Fast Forward Toggle shortcut is now FF Toggle, so both fit on 640×480 screens. A long button combo is drawn smaller instead of running into its row's name.
+
+## [1.11.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.11.0)
+
+- Headphones no longer buzz a few seconds after the sound stops. slot keeps the audio device open while headphones are in. ([#163](https://github.com/BrandonKowalski/slot/issues/163))
+- slot leaves the CPU at its full fixed speed again, as it did in 1.9.0. `schedutil` will have to be revisited. ([#162](https://github.com/BrandonKowalski/slot/issues/162))
+- Fast Forward Toggle is a new shortcut. One press turns fast-forward on and the next turns it off. It's unbound by default. ([#164](https://github.com/BrandonKowalski/slot/issues/164))
+- Fast Forward has a 1.5x speed, for games where 2x is too fast. ([#161](https://github.com/BrandonKowalski/slot/issues/161))
+
 ## [1.10.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.10.0)
 
 - Screenshots: Press SELECT + X while you play. Once you take one, you can pick Screenshots in the in-game menu to view them. They're saved as `.png` in `Screenshots/`. ([#94](https://github.com/BrandonKowalski/slot/issues/94))
