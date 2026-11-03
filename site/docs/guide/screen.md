@@ -121,3 +121,6 @@ These work on the shelf and in game. They're also rows in Settings â†’ Screen â†
 
 Blue light warms the picture up for playing in the dark. Every brightness step keeps the backlight on, so the lowest one
 is still readable in the dark.
+
+**Dim** darkens the whole picture in software, past what the backlight's lowest step can reach, for a room darker still.
+It sits under Brightness and Blue Light on the same General page, and at the end of the in-game Screen page.

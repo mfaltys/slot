@@ -8,6 +8,7 @@ use crate::zone::Zone;
 
 pub const BRIGHTNESS_MAX: u8 = 9;
 pub const BLUE_LIGHT_MAX: u8 = 9;
+pub const DIM_MAX: u8 = 9;
 pub const VOLUME_MAX: u8 = 100;
 
 const UTC_OFFSET_MIN: i16 = -720;
@@ -305,6 +306,7 @@ pub struct SlotState {
     pub cart_platform: Option<Platform>,
     pub brightness: u8,
     pub blue_light: u8,
+    pub dim: u8,
     pub volume: u8,
     pub volume_hp: u8,
     pub muted: bool,
@@ -455,6 +457,7 @@ impl Default for SlotState {
             cart_platform: None,
             brightness: 5,
             blue_light: 0,
+            dim: 0,
             volume: 60,
             volume_hp: 60,
             muted: false,
@@ -611,6 +614,7 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
             r.stem
         ))
     ));
+    text.push_str(&format!("dim={}\n", s.dim));
     atomic_write(&state_path(root), text.as_bytes())?;
     write_list(root, RECENTS_FILE, &s.recents)?;
     write_list(root, FAVORITES_FILE, &s.favorites)
@@ -621,6 +625,7 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut cart_platform = None;
     let mut brightness = None;
     let mut blue_light = None;
+    let mut dim = None;
     let mut volume = None;
     let mut volume_hp = None;
     let mut muted = None;
@@ -674,6 +679,7 @@ fn parse(text: &str) -> Option<SlotState> {
             "cart_platform" => cart_platform = platform_value(value),
             "brightness" => brightness = Some(level(value, BRIGHTNESS_MAX)?),
             "blue_light" => blue_light = Some(level(value, BLUE_LIGHT_MAX)?),
+            "dim" => dim = level(value, DIM_MAX),
             "volume" => volume = Some(level(value, VOLUME_MAX)?),
             "volume_hp" => volume_hp = Some(level(value, VOLUME_MAX)?),
             "muted" => muted = Some(level(value, 1)? == 1),
@@ -728,6 +734,7 @@ fn parse(text: &str) -> Option<SlotState> {
         cart_platform,
         brightness: brightness?,
         blue_light: blue_light?,
+        dim: dim.unwrap_or(fallback.dim),
         volume: volume?,
         volume_hp: volume_hp.or(volume)?,
         muted: muted?,

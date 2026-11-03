@@ -2,6 +2,12 @@ const WARMEST: [f32; 3] = [1.0, 0.82, 0.62];
 
 pub const BLUE_LIGHT_MAX: u8 = 9;
 
+pub const DIM_MAX: u8 = 9;
+
+/// What the picture is scaled to at the last dim step. The backlight's own floor
+/// can't go lower, so this is what gets a dark room darker still.
+const DIM_FLOOR: f32 = 0.3;
+
 pub fn blue_light_gain(step: u8) -> [f32; 3] {
     let t = step.min(BLUE_LIGHT_MAX) as f32 / BLUE_LIGHT_MAX as f32;
     let mut gain = [1.0f32; 3];
@@ -9,4 +15,11 @@ pub fn blue_light_gain(step: u8) -> [f32; 3] {
         *g = 1.0 + (warm - 1.0) * t;
     }
     gain
+}
+
+/// Scales the whole composed frame down without touching the backlight, so the
+/// picture can go darker than the panel's lowest hardware step.
+pub fn dim_gain(step: u8) -> f32 {
+    let t = step.min(DIM_MAX) as f32 / DIM_MAX as f32;
+    1.0 + (DIM_FLOOR - 1.0) * t
 }

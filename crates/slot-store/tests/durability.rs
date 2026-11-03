@@ -223,6 +223,7 @@ fn a_card_from_before_the_settings_keeps_all_its_values() {
             cart_platform: None,
             brightness: 3,
             blue_light: 1,
+            dim: 0,
             volume: 40,
             volume_hp: 40,
             muted: true,

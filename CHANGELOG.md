@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Dim, a new row on Settings → Screen → General and at the end of the in-game Screen page, scales the whole picture down in software. The backlight's lowest step is as far as the hardware goes; Dim goes further, for playing in the dark. ([#189](https://github.com/BrandonKowalski/slot/issues/189))
+
 ## [1.10.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.10.0)
 
 - Screenshots: Press SELECT + X while you play. Once you take one, you can pick Screenshots in the in-game menu to view them. They're saved as `.png` in `Screenshots/`. ([#94](https://github.com/BrandonKowalski/slot/issues/94))

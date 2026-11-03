@@ -1,5 +1,5 @@
 use crate::draw::{Draw, Sprites, TexId};
-use crate::grade::blue_light_gain;
+use crate::grade::{blue_light_gain, dim_gain};
 use crate::pipeline::GamePass;
 use crate::quad::Quad;
 use crate::shaders::{BLIT_FRAG, BLIT_VERT, TURN_VERT};
@@ -24,6 +24,8 @@ pub struct Compositor {
     u_gain: gl::types::GLint,
     u_blit_uv: gl::types::GLint,
     gain: [f32; 3],
+    blue_light: u8,
+    dim: u8,
     shake: f32,
     window: (u32, u32),
     screen: f32,
@@ -75,6 +77,8 @@ impl Compositor {
                 u_gain,
                 u_blit_uv,
                 gain: blue_light_gain(0),
+                blue_light: 0,
+                dim: 0,
                 shake: 0.0,
                 window: (OUT_W, OUT_H),
                 screen: 0.0,
@@ -166,7 +170,18 @@ impl Compositor {
     }
 
     pub fn set_blue_light(&mut self, step: u8) {
-        self.gain = blue_light_gain(step);
+        self.blue_light = step;
+        self.regain();
+    }
+
+    pub fn set_dim(&mut self, step: u8) {
+        self.dim = step;
+        self.regain();
+    }
+
+    fn regain(&mut self) {
+        let dim = dim_gain(self.dim);
+        self.gain = blue_light_gain(self.blue_light).map(|g| g * dim);
     }
 
     pub fn set_screen_effect(&mut self, effect: crate::ScreenEffect) {

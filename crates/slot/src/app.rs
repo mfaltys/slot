@@ -9,8 +9,8 @@ use slot_retro::LinkChannel;
 use slot_store::{
     format_stamp, parse_stamp, read_slot_state, scan, write_slot_state, BezelPick, Blending, Cart,
     Core, GbColors, Platform, Recent, Scale, Shader, ShotDir, ShotEntry, SlotState, StateEntry,
-    StateRing, Stretch, WallpaperPick, WallpaperTint, BLUE_LIGHT_MAX, BRIGHTNESS_MAX, FF_SPEEDS,
-    RING_MAX, VOLUME_MAX,
+    StateRing, Stretch, WallpaperPick, WallpaperTint, BLUE_LIGHT_MAX, BRIGHTNESS_MAX, DIM_MAX,
+    FF_SPEEDS, RING_MAX, VOLUME_MAX,
 };
 use slot_ui::{
     board_from, board_zoom, draw_empty_slot, draw_footer, draw_ground, draw_sticker, ease,
@@ -1151,6 +1151,7 @@ impl App {
             (QuickRow::Stretch, Platform::Gbc) => QuickRow::GbcStretch,
             (QuickRow::PlayBrightness, _) => QuickRow::Brightness,
             (QuickRow::PlayBlueLight, _) => QuickRow::BlueLight,
+            (QuickRow::PlayDim, _) => QuickRow::Dim,
             (row, _) => row,
         }
     }
@@ -1177,6 +1178,10 @@ impl App {
             QuickRow::Blending => Some(blending_value(self.blending_in_play())),
             QuickRow::Brightness => Some(QuickValue::level(self.state.brightness)),
             QuickRow::BlueLight => Some(match self.state.blue_light {
+                0 => QuickValue::Off,
+                n => QuickValue::level(n),
+            }),
+            QuickRow::Dim | QuickRow::PlayDim => Some(match self.state.dim {
                 0 => QuickValue::Off,
                 n => QuickValue::level(n),
             }),
@@ -2693,7 +2698,10 @@ impl App {
             Phase::Playing { .. } => self.core == Core::Fake08,
             _ => {
                 let shelf = self.shelf();
-                shelf.carts.get(shelf.index).is_some_and(|c| c.platform == Platform::Pico8)
+                shelf
+                    .carts
+                    .get(shelf.index)
+                    .is_some_and(|c| c.platform == Platform::Pico8)
             }
         }
     }
@@ -3065,8 +3073,10 @@ impl App {
             }
             QuickRow::Brightness
             | QuickRow::BlueLight
+            | QuickRow::Dim
             | QuickRow::PlayBrightness
             | QuickRow::PlayBlueLight
+            | QuickRow::PlayDim
             | QuickRow::AutoLoad
             | QuickRow::EjectSave
             | QuickRow::Turbo
@@ -3175,6 +3185,17 @@ impl App {
                 false => now.saturating_sub(1),
             };
             self.set_level(kind, to);
+            return;
+        }
+        if row == QuickRow::Dim {
+            let to = match right {
+                true => up(self.state.dim, 1, DIM_MAX),
+                false => self.state.dim.saturating_sub(1),
+            };
+            if self.state.dim != to {
+                self.state.dim = to;
+                self.persist_soon();
+            }
             return;
         }
         if let QuickRow::Palette | QuickRow::GbPalette = row {
@@ -3314,8 +3335,10 @@ impl App {
             QuickRow::ScreenGeneral
             | QuickRow::Brightness
             | QuickRow::BlueLight
+            | QuickRow::Dim
             | QuickRow::PlayBrightness
             | QuickRow::PlayBlueLight
+            | QuickRow::PlayDim
             | QuickRow::Wallpaper
             | QuickRow::Recents
             | QuickRow::ShowTitles
@@ -3560,6 +3583,10 @@ impl App {
 
     pub fn blue_light(&self) -> u8 {
         self.state.blue_light
+    }
+
+    pub fn dim(&self) -> u8 {
+        self.state.dim
     }
 
     pub fn brightness(&self) -> u8 {
