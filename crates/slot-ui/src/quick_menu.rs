@@ -123,10 +123,11 @@ pub enum QuickRow {
     Networks,
     CheckUpdates,
     Server,
+    Romm,
 }
 
 impl QuickRow {
-    pub const ALL: [QuickRow; 114] = [
+    pub const ALL: [QuickRow; 115] = [
         QuickRow::FastForward,
         QuickRow::FastForwardSound,
         QuickRow::Screen,
@@ -241,6 +242,7 @@ impl QuickRow {
         QuickRow::Networks,
         QuickRow::CheckUpdates,
         QuickRow::Server,
+        QuickRow::Romm,
     ];
 
     pub const MAIN: [QuickRow; 6] = [
@@ -262,10 +264,11 @@ impl QuickRow {
         QuickRow::DateTime,
     ];
 
-    pub const NETWORK: [QuickRow; 5] = [
+    pub const NETWORK: [QuickRow; 6] = [
         QuickRow::WifiPower,
         QuickRow::Networks,
         QuickRow::Server,
+        QuickRow::Romm,
         QuickRow::FetchArt,
         QuickRow::CheckUpdates,
     ];
@@ -462,7 +465,8 @@ impl QuickRow {
             | QuickRow::Networks
             | QuickRow::CheckUpdates
             | QuickRow::FetchArt
-            | QuickRow::Server => &QuickRow::NETWORK,
+            | QuickRow::Server
+            | QuickRow::Romm => &QuickRow::NETWORK,
             QuickRow::ControlsShelf | QuickRow::Shortcuts | QuickRow::ControlsInGame => {
                 &QuickRow::CONTROL_PAGES
             }
@@ -617,6 +621,7 @@ impl QuickRow {
             QuickRow::Networks => "Network",
             QuickRow::CheckUpdates => "Check for Updates",
             QuickRow::Server => "Gamebit",
+            QuickRow::Romm => "RomM",
             QuickRow::Controls => "Controls",
             QuickRow::ControlsShelf => "Shelf",
             QuickRow::ControlsInGame => "In-Game",
@@ -712,6 +717,7 @@ impl QuickRow {
                 | QuickRow::Networks
                 | QuickRow::CheckUpdates
                 | QuickRow::Server
+                | QuickRow::Romm
         )
     }
 
